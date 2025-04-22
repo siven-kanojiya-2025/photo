@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auto Photo Capture</title>
+</head>
+<body>
+    <h1>ऑटो फोटो कैप्चर</h1>
+    <button onclick="startCapture()">कैप्चर शुरू करें</button>
+    <button onclick="stopCapture()">कैप्चर बंद करें</button>
+    <br><br>
+    <video id="video" width="640" height="480" autoplay></video>
+    <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+    <img id="photo" src="" alt="कैप्चर की गई फोटो">
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const photo = document.getElementById('photo');
+        let intervalId;
+
+        // वेबकैम शुरू करना
+        function startCamera() {
+            navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+                .then(stream => {
+                    video.srcObject = stream;
+                    video.play();
+                })
+                .catch(err => {
+                    alert("कैमरा शुरू करने में समस्या: " + err);
+                });
+        }
+
+        // फोटो कैप्चर और अपलोड
+        function takePicture() {
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const data = canvas.toDataURL('image/png');
+            photo.setAttribute('src', data);
+
+            // सर्वर पर अपलोड करें
+            fetch('https://your-server.com/upload', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: data })
+            })
+            .then(response => response.json())
+            .then(data => console.log('फोटो अपलोड हो गई:', data))
+            .catch(err => console.error('अपलोड में एरर:', err));
+        }
+
+        // ऑटो कैप्चर शुरू
+        function startCapture() {
+            startCamera();
+            intervalId = setInterval(takePicture, 2000); // हर 2 सेकंड में फोटो
+            alert("फोटो कैप्चर शुरू!");
+        }
+
+        // कैप्चर बंद
+        function stopCapture() {
+            clearInterval(intervalId);
+            video.srcObject.getTracks().forEach(track => track.stop());
+            photo.setAttribute('src', '');
+            alert("फोटो कैप्चर बंद!");
+        }
+    </script>
+</body>
+</html>
